@@ -33,13 +33,11 @@ export default function returnAlgoData(data) {
       turnaroundTime,
     });
 
-    // Add to timeline for each unit of time
-    for (let time = startTime; time < endTime; time++) {
-      timeline.push({
-        time,
-        processId: process.id,
-      });
-    }
+    timeline.push({
+      time: startTime,
+      processId: process.id,
+      duration: process.burstTime,
+    });
 
     currentTime = endTime;
   });
