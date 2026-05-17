@@ -320,17 +320,17 @@
 }
 
 .gantt-time-axis {
-  display: flex;
-  align-items: flex-start;
+  display: block;
   position: relative;
+  height: 32px;
   margin-top: 6px;
 }
 
 .gantt-time-cell {
-  position: relative;
-  flex: 0 0 auto;
+  position: absolute;
   min-height: 26px;
 }
+
 
 .gantt-time-cell-last {
   width: 0;
