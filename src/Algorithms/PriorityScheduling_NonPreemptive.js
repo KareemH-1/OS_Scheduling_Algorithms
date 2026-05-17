@@ -1,14 +1,13 @@
 // Input:
 // {
 //   processes: [
-//     { id: 'P1', burstTime: 5 }
-//   ],
-//   timeQuantum: 2
+//     { id: 'P1', burstTime: 5, priority: 1 }
+//   ]
 // }
 // Output:
 // {
 //   processes: [
-//     { id: 'P1', burstTime: 5, waitTime: 0, turnaroundTime: 0 }
+//     { id: 'P1', burstTime: 5, priority: 1, waitTime: 0, turnaroundTime: 0 }
 //   ],
 //   avgWaitTime: 0,
 //   avgTurnaroundTime: 0,
@@ -25,6 +24,7 @@ export default function returnAlgoData(data) {
     result.push({
       id: processes[i].id,
       burstTime: processes[i].burstTime,
+      priority: processes[i].priority,
       waitTime: 0,
       turnaroundTime: 0
     });

@@ -2,8 +2,7 @@
 // {
 //   processes: [
 //     { id: 'P1', burstTime: 5 }
-//   ],
-//   timeQuantum: 2
+//   ]
 // }
 // Output:
 // {
