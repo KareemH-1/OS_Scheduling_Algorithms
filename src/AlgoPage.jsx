@@ -6,6 +6,7 @@ import returnPriorityPreemptiveData from './Algorithms/PriorityScheduling_Preemp
 import returnPriorityNonPreemptiveData from './Algorithms/PriorityScheduling_NonPreemptive.js';
 import returnRoundRobinData from './Algorithms/RoundRobin.js';
 import GanttChart from './components/GanttChart.jsx';
+import examples from './assets/examples.json';
 import './styles/AlgoPage.css';
 
 export default function AlgoPage(props) {
@@ -19,10 +20,13 @@ export default function AlgoPage(props) {
     priority: ''
   });
   const [error, setError] = useState('');
+  const [examplesOpen, setExamplesOpen] = useState(false);
 
   const usesArrivalTime = algo === 'SJF-P' || algo === 'SJF-NP';
   const isPriority = algo === 'PS-P' || algo === 'PS-NP';
   const isRoundRobin = algo === 'RR';
+
+  const algoExamples = examples[algo] || [];
 
   function getAlgorithmFunction() {
     if (algo === 'FCFS') {
@@ -57,7 +61,6 @@ export default function AlgoPage(props) {
       }
       return;
     }
-
     if (event.key.length === 1 && !/^[0-9]$/.test(event.key)) {
       event.preventDefault();
     }
@@ -90,12 +93,10 @@ export default function AlgoPage(props) {
       setError('Burst Time is required');
       return;
     }
-
     if (usesArrivalTime && !arrivalTime) {
       setError('Arrival Time is required');
       return;
     }
-
     if (isPriority && !priority) {
       setError('Priority is required');
       return;
@@ -114,25 +115,22 @@ export default function AlgoPage(props) {
 
     const newProcesses = processes.slice();
     newProcesses.push(newProcess);
-
     setProcesses(newProcesses);
-    setProcessInput({
-      burstTime: '',
-      arrivalTime: '',
-      priority: ''
-    });
+    setProcessInput({ burstTime: '', arrivalTime: '', priority: '' });
   }
 
   function handleRemoveProcess(index) {
     const newProcesses = processes.slice();
     newProcesses.splice(index, 1);
 
-    const renumberedProcesses = newProcesses.map((process, i) => ({
-      ...process,
-      id: `P${i + 1}`
-    }));
+    const renumbered = [];
+    for (var i = 0; i < newProcesses.length; i++) {
+      var p = Object.assign({}, newProcesses[i]);
+      p.id = 'P' + (i + 1);
+      renumbered.push(p);
+    }
 
-    setProcesses(renumberedProcesses);
+    setProcesses(renumbered);
     setResults(null);
   }
 
@@ -150,12 +148,13 @@ export default function AlgoPage(props) {
       setError('Time Quantum is required for Round Robin');
       return;
     }
+    if (isRoundRobin && parseInt(parsedTimeQuantum) <= 0) {
+      setError('Time Quantum must be greater than 0');
+      return;
+    }
 
     const algoFunction = getAlgorithmFunction();
-    
-    const data = {
-      processes: processes
-    };
+    const data = { processes: processes };
 
     if (isRoundRobin) {
       data.timeQuantum = parseInt(parsedTimeQuantum);
@@ -169,16 +168,97 @@ export default function AlgoPage(props) {
     setTimeQuantum(sanitizeNumericInput(event.target.value));
   }
 
+  function handleRunExample(example) {
+    setProcesses(example.processes.slice());
+    if (isRoundRobin && example.timeQuantum) {
+      setTimeQuantum(String(example.timeQuantum));
+    }
+    setResults(null);
+    setError('');
+    setExamplesOpen(false);
+
+    const algoFunction = getAlgorithmFunction();
+    const data = { processes: example.processes.slice() };
+    if (isRoundRobin && example.timeQuantum) {
+      data.timeQuantum = example.timeQuantum;
+    }
+    const result = algoFunction(data);
+    setResults(result);
+  }
+
+  function toggleExamples() {
+    setExamplesOpen(!examplesOpen);
+  }
+
   return (
     <div className="algo-page">
       <div className="algo-container">
         <h1 className="algo-title">{algo}</h1>
-        
+
+        {algoExamples.length > 0 && (
+          <div className="examples-section">
+            <button className="examples-toggle" onClick={toggleExamples}>
+              <span>Examples</span>
+              <span className={`examples-chevron ${examplesOpen ? 'examples-chevron--open' : ''}`}>
+                ▾
+              </span>
+            </button>
+
+            {examplesOpen && (
+              <div className="examples-list">
+                {algoExamples.map(function(example, i) {
+                  return (
+                    <div className="example-card" key={i}>
+                      <div className="example-card-header">
+                        <div>
+                          <p className="example-label">{example.label}</p>
+                          <p className="example-description">{example.description}</p>
+                        </div>
+                        <button
+                          className="btn-run-example"
+                          onClick={function() { handleRunExample(example); }}
+                        >
+                          Run
+                        </button>
+                      </div>
+
+                      <table className="example-table">
+                        <thead>
+                          <tr>
+                            <th>Process</th>
+                            {usesArrivalTime && <th>Arrival Time</th>}
+                            <th>Burst Time</th>
+                            {isPriority && <th>Priority</th>}
+                            {isRoundRobin && <th>Quantum</th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {example.processes.map(function(p, j) {
+                            return (
+                              <tr key={j}>
+                                <td>{p.id}</td>
+                                {usesArrivalTime && <td>{p.arrivalTime}</td>}
+                                <td>{p.burstTime}</td>
+                                {isPriority && <td>{p.priority}</td>}
+                                {isRoundRobin && <td>{j === 0 ? example.timeQuantum : ''}</td>}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {error && <div className="error-message">{error}</div>}
-        
+
         <div className="form-section">
           <h2>Add Processes</h2>
-          
+
           <div className="input-group">
             <input
               type="text"
@@ -190,7 +270,7 @@ export default function AlgoPage(props) {
               inputMode="numeric"
               pattern="[0-9]*"
             />
-            {usesArrivalTime ? (
+            {usesArrivalTime && (
               <input
                 type="text"
                 name="arrivalTime"
@@ -201,7 +281,8 @@ export default function AlgoPage(props) {
                 inputMode="numeric"
                 pattern="[0-9]*"
               />
-            ) : isPriority ? (
+            )}
+            {isPriority && (
               <input
                 type="text"
                 name="priority"
@@ -212,7 +293,7 @@ export default function AlgoPage(props) {
                 inputMode="numeric"
                 pattern="[0-9]*"
               />
-            ) : null}
+            )}
             <button onClick={handleAddProcess} className="btn-add">
               Add Process
             </button>
@@ -247,22 +328,24 @@ export default function AlgoPage(props) {
                 </tr>
               </thead>
               <tbody>
-                {processes.map((process, i) => (
-                  <tr key={i}>
-                    <td>{process.id}</td>
-                    <td>{process.burstTime}</td>
-                    {usesArrivalTime && <td>{process.arrivalTime}</td>}
-                    {isPriority && <td>{process.priority}</td>}
-                    <td>
-                      <button
-                        onClick={() => handleRemoveProcess(i)}
-                        className="btn-remove"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {processes.map(function(process, i) {
+                  return (
+                    <tr key={i}>
+                      <td>{process.id}</td>
+                      <td>{process.burstTime}</td>
+                      {usesArrivalTime && <td>{process.arrivalTime}</td>}
+                      {isPriority && <td>{process.priority}</td>}
+                      <td>
+                        <button
+                          onClick={function() { handleRemoveProcess(i); }}
+                          className="btn-remove"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <button onClick={handleStart} className="btn-start">
@@ -287,16 +370,18 @@ export default function AlgoPage(props) {
                 </tr>
               </thead>
               <tbody>
-                {results.processes.map((process, i) => (
-                  <tr key={i} className="result-row">
-                    <td>{process.id}</td>
-                    <td>{process.burstTime}</td>
-                    {usesArrivalTime && <td>{process.arrivalTime}</td>}
-                    {isPriority && <td>{process.priority}</td>}
-                    <td className="highlight-wait">{process.waitTime}</td>
-                    <td className="highlight-turnaround">{process.turnaroundTime}</td>
-                  </tr>
-                ))}
+                {results.processes.map(function(process, i) {
+                  return (
+                    <tr key={i} className="result-row">
+                      <td>{process.id}</td>
+                      <td>{process.burstTime}</td>
+                      {usesArrivalTime && <td>{process.arrivalTime}</td>}
+                      {isPriority && <td>{process.priority}</td>}
+                      <td className="highlight-wait">{process.waitTime}</td>
+                      <td className="highlight-turnaround">{process.turnaroundTime}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="averages-section">
