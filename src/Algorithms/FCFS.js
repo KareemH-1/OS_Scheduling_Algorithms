@@ -17,27 +17,33 @@
 // }
 export default function returnAlgoData(data) {
   const processes = data.processes;
-  const result = [];
   const timeline = [];
+  const result = [];
 
-  for (let i = 0; i < processes.length; i++) {
-    result.push({
-      id: processes[i].id,
-      burstTime: processes[i].burstTime,
-      waitTime: 0,
-      turnaroundTime: 0
-    });
+  let currentTime = 0;
+  let totalWait = 0;
+  let totalTurnaround = 0;
+
+  for (const p of processes) {
+    const waitTime = currentTime;
+    const turnaroundTime = currentTime + p.burstTime;
 
     timeline.push({
-      time: i,
-      processId: processes[i].id
+      time: currentTime,
+      processId: p.id,
+      duration: p.burstTime,
     });
+    result.push({ id: p.id, burstTime: p.burstTime, waitTime, turnaroundTime });
+
+    totalWait += waitTime;
+    totalTurnaround += turnaroundTime;
+    currentTime += p.burstTime;
   }
 
   return {
     processes: result,
-    avgWaitTime: 0,
-    avgTurnaroundTime: 0,
-    timeline
+    avgWaitTime: totalWait / processes.length,
+    avgTurnaroundTime: totalTurnaround / processes.length,
+    timeline,
   };
 }
