@@ -1,44 +1,59 @@
-// Input:
-// {
-//   processes: [
-//     { id: 'P1', burstTime: 5, priority: 1 }
-//   ]
-// }
-// Output:
-// {
-//   processes: [
-//     { id: 'P1', burstTime: 5, priority: 1, waitTime: 0, turnaroundTime: 0 }
-//   ],
-//   avgWaitTime: 0,
-//   avgTurnaroundTime: 0,
-//   timeline: [
-//     { time: 0, processId: 'P1' }
-//   ]
-// }
 export default function returnAlgoData(data) {
-  const processes = data.processes;
+  const processes = data.processes.map((p) => ({
+    ...p,
+    arrivalTime: p.arrivalTime || 0,
+  }));
+
+  // Sort by priority (lower number = higher priority)
+  const sortedProcesses = [...processes].sort(
+    (a, b) => a.priority - b.priority,
+  );
+
   const result = [];
   const timeline = [];
+  let currentTime = 0;
 
-  for (let i = 0; i < processes.length; i++) {
+  sortedProcesses.forEach((process) => {
+    // If process arrives after current time, idle until arrival
+    if (process.arrivalTime > currentTime) {
+      currentTime = process.arrivalTime;
+    }
+
+    const startTime = currentTime;
+    const endTime = startTime + process.burstTime;
+    const waitTime = startTime - process.arrivalTime;
+    const turnaroundTime = endTime - process.arrivalTime;
+
     result.push({
-      id: processes[i].id,
-      burstTime: processes[i].burstTime,
-      priority: processes[i].priority,
-      waitTime: 0,
-      turnaroundTime: 0
+      id: process.id,
+      burstTime: process.burstTime,
+      arrivalTime: process.arrivalTime,
+      priority: process.priority,
+      waitTime,
+      turnaroundTime,
     });
 
-    timeline.push({
-      time: i,
-      processId: processes[i].id
-    });
-  }
+    // Add to timeline for each unit of time
+    for (let time = startTime; time < endTime; time++) {
+      timeline.push({
+        time,
+        processId: process.id,
+      });
+    }
+
+    currentTime = endTime;
+  });
+
+  // Calculate averages
+  const avgWaitTime =
+    result.reduce((sum, p) => sum + p.waitTime, 0) / result.length;
+  const avgTurnaroundTime =
+    result.reduce((sum, p) => sum + p.turnaroundTime, 0) / result.length;
 
   return {
     processes: result,
-    avgWaitTime: 0,
-    avgTurnaroundTime: 0,
-    timeline
+    avgWaitTime,
+    avgTurnaroundTime,
+    timeline,
   };
 }
