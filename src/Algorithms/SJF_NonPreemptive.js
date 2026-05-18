@@ -1,73 +1,87 @@
 export default function returnAlgoData(data) {
-  const processes = data.processes.map((p) => ({
-    ...p,
-    arrivalTime: p.arrivalTime || 0,
-    done: false,
-  }));
+  const pendingProcesses = data.processes.map(p => ({ ...p }));
 
-  const timeline = [];
-  const finishTime = {};
-  let currentTime = 0;
-  let completed = 0;
-  const n = processes.length;
-
-  while (completed < n) {
-    const available = processes.filter(
-      (p) => p.arrivalTime <= currentTime && !p.done,
-    );
-
-    if (!available.length) {
-      const nextArrival = Math.min(
-        ...processes.filter((p) => !p.done).map((p) => p.arrivalTime)
-      );
-      currentTime = nextArrival;
-      continue;
+  pendingProcesses.sort((a, b) => {
+    if (a.arrivalTime === b.arrivalTime) {
+      const idA = parseInt(a.id.replace(/\D/g, ''), 10);
+      const idB = parseInt(b.id.replace(/\D/g, ''), 10);
+      return idA - idB;
     }
-
-    const current = available.reduce((a, b) =>
-      a.burstTime <= b.burstTime ? a : b,
-    );
-
-    timeline.push({ time: currentTime, processId: current.id });
-    currentTime += current.burstTime;
-    finishTime[current.id] = currentTime;
-    current.done = true;
-    completed++;
-  }
-
-  const shift = timeline[0].time;
-  const shiftedTimeline = timeline.map((t) => ({
-    ...t,
-    time: t.time - shift,
-  }));
-
-  let totalWait = 0;
-  let totalTurnaround = 0;
-
-  const result = data.processes.map((p) => {
-    const arrivalTime = p.arrivalTime || 0;
-    const shiftedFinish = finishTime[p.id] - shift;
-    const shiftedArrival = Math.max(0, arrivalTime - shift);
-
-    const turnaroundTime = shiftedFinish - shiftedArrival;
-    const waitTime = turnaroundTime - p.burstTime;
-
-    totalWait += waitTime;
-    totalTurnaround += turnaroundTime;
-
-    return {
-      id: p.id,
-      burstTime: p.burstTime,
-      arrivalTime,
-      waitTime,
-      turnaroundTime,
-    };
+    return a.arrivalTime - b.arrivalTime;
   });
 
+  let currentTime = 0;
+  let completedProcessesCount = 0;
+  const totalProcesses = pendingProcesses.length;
+  
+  const readyQueue = [];
+  const resultProcesses = [];
+  const timeline = [];
+
+  let totalWaitTime = 0;
+  let totalTurnaroundTime = 0;
+
+  while (completedProcessesCount < totalProcesses) {
+    while (pendingProcesses.length > 0 && pendingProcesses[0].arrivalTime <= currentTime) {
+      readyQueue.push(pendingProcesses.shift());
+    }
+
+    if (readyQueue.length === 0) {
+      if (pendingProcesses.length > 0) {
+        currentTime = pendingProcesses[0].arrivalTime;
+        continue;
+      }
+    }
+
+    readyQueue.sort((a, b) => {
+      if (a.burstTime === b.burstTime) {
+        if (a.arrivalTime === b.arrivalTime) {
+          const idA = parseInt(a.id.replace(/\D/g, ''), 10);
+          const idB = parseInt(b.id.replace(/\D/g, ''), 10);
+          return idA - idB;
+        }
+        return a.arrivalTime - b.arrivalTime;
+      }
+      return a.burstTime - b.burstTime;
+    });
+
+    const currentProcess = readyQueue.shift();
+
+    const waitTime = currentTime - currentProcess.arrivalTime;
+    const turnaroundTime = waitTime + currentProcess.burstTime;
+
+    timeline.push({
+      processId: currentProcess.id,
+      time: currentTime,
+      duration: currentProcess.burstTime
+    });
+
+    resultProcesses.push({
+      ...currentProcess,
+      waitTime: waitTime,
+      turnaroundTime: turnaroundTime
+    });
+
+    currentTime += currentProcess.burstTime;
+    totalWaitTime += waitTime;
+    totalTurnaroundTime += turnaroundTime;
+    
+    completedProcessesCount++;
+  }
+
+  resultProcesses.sort((a, b) => {
+    const idA = parseInt(a.id.replace(/\D/g, ''), 10);
+    const idB = parseInt(b.id.replace(/\D/g, ''), 10);
+    return idA - idB;
+  });
+
+  const avgWaitTime = totalProcesses > 0 ? totalWaitTime / totalProcesses : 0;
+  const avgTurnaroundTime = totalProcesses > 0 ? totalTurnaroundTime / totalProcesses : 0;
+
   return {
-    processes: result,
-    avgWaitTime: totalWait / result.length,
-    avgTurnaroundTime: totalTurnaround / result.length,
-    timeline: shiftedTimeline,
+    processes: resultProcesses,
+    avgWaitTime: avgWaitTime,
+    avgTurnaroundTime: avgTurnaroundTime,
+    timeline: timeline
   };
 }

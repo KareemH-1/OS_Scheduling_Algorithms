@@ -12,18 +12,51 @@ function createBlockFromTimelineStep(step, index) {
   const processId = getStepProcessId(step, index);
   const time = Number(step?.time);
   const start = Number.isFinite(time) ? time : index;
-  return { processId, start, end: start };
+  const duration = Number(step?.duration);
+  return {
+    processId,
+    start,
+    end: start,
+    duration: Number.isFinite(duration) && duration >= 0 ? duration : null,
+  };
 }
 
 function getTimelineFinalEnd(data, timeline) {
-  const lastStep = timeline[timeline.length - 1];
-  const lastTime = Number(lastStep?.time);
-  const lastDuration = Number(lastStep?.duration);
+  if (!timeline || timeline.length === 0) return 0;
 
-  if (Number.isFinite(lastTime) && Number.isFinite(lastDuration)) {
-    return lastTime + lastDuration;
+  const lastStep = timeline[timeline.length - 1];
+  const lastStart = Number(lastStep?.time);
+
+  const candidates = [];
+
+  // Use process finish times when available: arrival + turnaround
+  if (data && Array.isArray(data.processes) && data.processes.length > 0) {
+    data.processes.forEach((p) => {
+      const arrival = Number(p.arrivalTime) || 0;
+      const ta = Number(p.turnaroundTime);
+      if (Number.isFinite(ta)) candidates.push(arrival + ta);
+    });
   }
-  if (Number.isFinite(lastTime)) return lastTime + 1;
+
+  // If timeline steps include durations (e.g. Round Robin), trust those exact end points.
+  timeline.forEach((step, index) => {
+    const start = Number(step?.time);
+    const duration = Number(step?.duration);
+    if (Number.isFinite(start) && Number.isFinite(duration) && duration >= 0) {
+      candidates.push(start + duration);
+    }
+    if (Number.isFinite(start)) {
+      candidates.push(start);
+    }
+  });
+
+  // baseline: last start + 1, or timeline length
+  if (Number.isFinite(lastStart)) candidates.push(lastStart + 1);
+  candidates.push(timeline.length);
+
+  const maxFinish = Math.max(...candidates.filter((v) => Number.isFinite(v)));
+  if (Number.isFinite(maxFinish) && maxFinish > 0) return maxFinish;
+
   return timeline.length;
 }
 
@@ -36,9 +69,13 @@ function createBlocksFromTimeline(data, timeline) {
 
   const finalEnd = getTimelineFinalEnd(data, timeline);
   for (let i = 0; i < blocks.length; i++) {
-    blocks[i].end = blocks[i + 1] ? blocks[i + 1].start : finalEnd;
+    if (Number.isFinite(blocks[i].duration)) {
+      blocks[i].end = blocks[i].start + blocks[i].duration;
+    } else {
+      blocks[i].end = blocks[i + 1] ? blocks[i + 1].start : finalEnd;
+    }
   }
-  return blocks;
+  return blocks.filter((block) => block.end > block.start);
 }
 
 function createBlocksFromProcesses(processes) {
