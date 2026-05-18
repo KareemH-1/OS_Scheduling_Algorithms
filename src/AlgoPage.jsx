@@ -155,13 +155,15 @@ export default function AlgoPage(props) {
 
     const algoFunction = getAlgorithmFunction();
     const data = { processes: processes };
-
+    
     if (isRoundRobin) {
       data.timeQuantum = parseInt(parsedTimeQuantum);
     }
-
+    
     const result = algoFunction(data);
     setResults(result);
+    console.log(result);
+
   }
 
   function handleTimeQuantumChange(event) {
@@ -184,6 +186,8 @@ export default function AlgoPage(props) {
     }
     const result = algoFunction(data);
     setResults(result);
+    console.log(result);
+
   }
 
   function toggleExamples() {

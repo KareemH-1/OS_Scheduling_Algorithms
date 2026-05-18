@@ -16,13 +16,14 @@ function createBlockFromTimelineStep(step, index) {
 }
 
 function getTimelineFinalEnd(data, timeline) {
-  if (data && Array.isArray(data.processes) && data.processes.length > 0) {
-    const maxTurnaround = Math.max(...data.processes.map((p) => Number(p.turnaroundTime) || 0));
-    if (Number.isFinite(maxTurnaround) && maxTurnaround > 0) return maxTurnaround;
-  }
   const lastStep = timeline[timeline.length - 1];
-  const lastStart = Number(lastStep?.time);
-  if (Number.isFinite(lastStart)) return lastStart + 1;
+  const lastTime = Number(lastStep?.time);
+  const lastDuration = Number(lastStep?.duration);
+
+  if (Number.isFinite(lastTime) && Number.isFinite(lastDuration)) {
+    return lastTime + lastDuration;
+  }
+  if (Number.isFinite(lastTime)) return lastTime + 1;
   return timeline.length;
 }
 
