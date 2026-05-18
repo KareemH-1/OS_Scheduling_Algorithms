@@ -79,9 +79,16 @@ export default function returnAlgoData(data) {
   const avgTurnaroundTime = totalProcesses > 0 ? totalTurnaroundTime / totalProcesses : 0;
 
   return {
+<<<<<<< HEAD
     processes: resultProcesses,
     avgWaitTime: avgWaitTime,
     avgTurnaroundTime: avgTurnaroundTime,
     timeline: timeline
+=======
+    processes: result,
+    avgWaitTime: totalWait / result.length,
+    avgTurnaroundTime: totalTurnaround / result.length,
+    timeline,
+>>>>>>> 82e97b6be56febc8a5ca9017197e374d69db66a2
   };
 }
