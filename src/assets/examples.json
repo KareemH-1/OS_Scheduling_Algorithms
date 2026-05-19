@@ -4,9 +4,19 @@
       "label": "Classic FCFS",
       "description": "Three processes arriving together — shows how arrival order determines scheduling.",
       "processes": [
-        { "id": "P1", "burstTime": 24 },
-        { "id": "P2", "burstTime": 3 },
-        { "id": "P3", "burstTime": 3 }
+        { "id": "P1", "burstTime": 24, "arrivalTime": 0 },
+        { "id": "P2", "burstTime": 3, "arrivalTime": 0 },
+        { "id": "P3", "burstTime": 3, "arrivalTime": 0 }
+      ]
+    },
+    {
+      "label": "Varied Arrival Times",
+      "description": "Processes arrive at different times — demonstrates how FCFS handles arriving processes when CPU is busy.",
+      "processes": [
+        { "id": "P1", "burstTime": 8, "arrivalTime": 0 },
+        { "id": "P2", "burstTime": 4, "arrivalTime": 1 },
+        { "id": "P3", "burstTime": 2, "arrivalTime": 2 },
+        { "id": "P4", "burstTime": 5, "arrivalTime": 3 }
       ]
     }
   ],

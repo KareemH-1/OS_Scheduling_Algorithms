@@ -22,7 +22,7 @@ export default function AlgoPage(props) {
   const [error, setError] = useState('');
   const [examplesOpen, setExamplesOpen] = useState(false);
 
-  const usesArrivalTime = algo === 'SJF-P' || algo === 'SJF-NP';
+  const usesArrivalTime = algo === 'SJF-P' || algo === 'SJF-NP' || algo === 'FCFS';
   const isPriority = algo === 'PS-P' || algo === 'PS-NP';
   const isRoundRobin = algo === 'RR';
 
@@ -93,7 +93,7 @@ export default function AlgoPage(props) {
       setError('Burst Time is required');
       return;
     }
-    if (usesArrivalTime && !arrivalTime) {
+    if (usesArrivalTime && algo !== 'FCFS' && !arrivalTime) {
       setError('Arrival Time is required');
       return;
     }
@@ -110,7 +110,7 @@ export default function AlgoPage(props) {
     if (isPriority) {
       newProcess.priority = parseInt(priority);
     } else if (usesArrivalTime) {
-      newProcess.arrivalTime = parseInt(arrivalTime);
+      newProcess.arrivalTime = parseInt(arrivalTime) || 0;
     }
 
     const newProcesses = processes.slice();
